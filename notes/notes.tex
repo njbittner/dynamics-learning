@@ -1,0 +1,393 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb, color, enumerate, graphicx}
+\title{Notes form Steven Boyd's EE264.B lecture 16}
+
+\newcommand\set[1]{\left\{#1\right\}}
+\newcommand\later[1]{\textcolor{red}{#1}}
+\newcommand\question[1]{\textcolor{green}{#1}}
+%\newcommand\bullet[1]{\textbf{*}#1}
+
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+
+\begin{document}
+
+\section{POMDP imbedding into Belief MDP}
+\subsection{Current solutions}
+\subsection{Limitations of the current methods}
+The most advanced current method for solving belief MDPs is to use monte carlo tree search.
+This still requires discritization of the state space. This is a fundamental mathematical
+limitation. It is unlikely that MCMC methods like MCTS will be able to progress this
+domain much futher. Instead, reformalization of the mathematics...
+
+\section{Rate Space Belief MDPs}
+Many problems are rate-space probelms
+\begin{enumerate}
+\item planning
+\item foraging behavior
+\item Meta-cognative tasks, such as estimating the time required for a computation
+\item Changepoint analysis -the amount of time to wait for an event before concluding
+  that something has changed in the environment.
+\end{enumerate}
+
+
+\section{Reformulating solutions to belief MDPs}
+the main contribution of this work is a theoretical reformulation of belief
+mdps to be optimally linearly solvable.
+
+Given a state transition PDE and control PDE's, KL optimal control theory provides
+a method for finding optimal solutions.
+
+If we can solve belief MDPs in the continuous case, then we should be able to apply
+these solutions to the rate-space case as well.
+
+These solutions, however, require an accurate dynamics transition model of the state
+space.
+
+Therefore, in addition to the theoretical advancements proposed in this paper, we
+also approach the task of dynamics learning through gaussian processes.
+
+\section{Optimal Control} (matthew Kelly video: https://www.youtube.com/watch?v=wlkRYMVUZTs)
+optimal control is the high-level overview. Just find the controls that maximize
+a performance metric
+\subsection{Closed-loop vs open-loop}
+\textbf{closed-loop}: $u=u(x)$
+\textbf{open-loop}: $u=u(t)$
+
+\subsection{Continuous vs Discrete}
+\textbf{continuous} (harder) \[ \delta x = f(t,\mathbf{x}, \mathbf{u})\]
+\textbf{discrete} (easier) \[\delta x = f(k, x_k, u_k)\]
+
+\subsection{phase}
+\textbf{single trajectory}: one starting point ending point, with continuous intbetween
+\textbf{multi-phase trajectories}: disjoint/jumping (not continuous between two poitns)
+
+\subsection{dynamics}
+smooth, unsmooth
+
+\subsection{objective}
+consistency
+
+\subsection{trjectory optimization definintion}
+\[min_{t_0, t_F, x(t), u(t)} \underbrace{J(t_0, t_F, x(t_0), x(t_F))}_{\text{boundary objective function}}
+    + \int_{t_F}^{t_F}\underbrace{w(\tau, x(\tau), u(\tau)) d\tau}_{\text{integral objective function}}\]
+
+\section{Model Predictive Control (Realtime optimization)}
+Also known as \\
+- Linear convex optimal control\\
+- finite horizon approximation\\
+- Realtime (embedded) optimization\\
+- supply-chain management\\
+- networking (facebook stchastic control)\\
+- finance
+
+\subsection{Linear dynamical system}
+$x(t+1) = Ax(t) + Bu(t)$, where x is the state and u is the input/control/action\\
+$u(t) \in U$; $x(t) \in X$\\
+$J= \sum_{t} l(x(t), u(t))$; $l$ is stage cost\\
+$x(0) = z$\\
+You can either think of x(0),x(1)... as variables, in which case
+we have actual constraints;
+or you can think of them as a recursion
+the two views are equivalent
+
+\subsubsection{ Data for probolem}
+- Dynamics input matrix $A \in R^{nxn}$, $B \in R^{nxm}$
+- Convex stage cost function $l \in R^{nxm}$; $l(0,0)=0$
+- Convex state and input constraints sets, X, U with $0\in X$, $0 in U$
+- initial z in X
+
+\subsection{ Greedy Control}
+$$u(t) = argmin_w {l(x(t), w) | w \in U, Ax(t)+Bw \in X}$$
+- minimize current stage, ignoring effect of u(t) on the fcuture past x(t+1)
+- typically absolute shit
+
+\subsection{DP Solution} - Dynamic programming with the Bellman equation:
+\textbf{Value function} (bellman) $V(z)$ is the optimal value of control as a
+function of the initial state $z$.
+\textbf{turns out V is convex}
+
+\[ V(z) = \inf{ \{ l(z,w)+V(Az+Bw) | w \in U,  Az+Bw \in X \} } \]
+
+where the optimal $u$ is given by
+\[ u^*_t = \argmin_w ((l(x_t, w) + V(Ax_t+Bw))\]
+
+Notice that $u$ is a function of state. so we have
+\[ u^*_t = \phi (x_t)\]
+This is referred to in the control literature as ``state feedback form''\\
+
+Look familliar? It should. This is just the typical \textbf{MDP} formulation.
+
+\subsection{Special case of linear optrimal control - Linear Quadratic Regularor}
+- value function is quadratic: $V(z) = z^TPz$//
+- P can be found by solving an algebraic Rccati equation (see notes)
+Linear convex optimal but
+
+\subsection{Finine Horizon approximations}
+Rather than running our simulations out for infinte time, we can solve for a finite time window.\\
+
+We impose a terminal constraint $x_T = 0$
+
+\begin{align*}  
+    &\textrm{minimize  }  & \sum_a blah\\
+    &\textrm{subject to  } & abecdadf * 3d \sum_i \frac{2}{3p}
+\end{align*}
+
+Remember that the meanint of T is our trajectory that we are sampling.
+
+We can calculate it directly. Don't fall prey to approximation techniques.
+
+\section{Model Predictive Control (MPC)}
+Historically, engineers needing real-time control could not use MPC since it requires solving
+a quadratic or linear program at each step. \later{boyd lec 16}
+
+incredibly effective for like everything.
+also
+- at time time t\\
+- you have a planning horizon of length T\\
+- this is a planning exercize\\
+- propogate the state forward T samples.\\
+- Have terminal constraints -- IE insist you will hit x(t+T) = 0 (stabilize)\\
+- U's constitute a plan (Policy)\\
+- Step t foward 1 unit (or x units). Now replan. IN OTHER WORDS, you only ever step x steps
+of a plan\\
+- AKA: receeding horizon control. Dynamic Linear Programming,  Finite look-ahead control. Etc.\\
+Dynamic matrix control. 
+- used in chemical process plants, supply chains, financial industries, revenue management
+
+- this gives a complicated state feedback control PIECEWIZE LINEAR. \\
+control $u_t = \phi_{mpc} $\\
+- You get to RELAX your steps at each step!! You solve a complex problem every step.\\
+- Often you can get virtually optimal with enough look-ahead. Poewrful.\later{ISN'T THIS JUST MCTS?}\\
+- So far the dynamics are deterministic
+- If the dynamics are changing, then things are  non-linear, so you need to do much more complicated
+math
+
+\subsection{difference between MPC and PID}
+\begin{itemize}
+\item PID bad for highly nonlinear systems
+\item PID are single-input-output
+\item PID hard to tune
+  \item MPC is a closed-loop impolementation of optimal control
+\end{itemize}
+
+\subsection{Explicit MPC}
+$l$ quadratic, X and U polyhedral
+not practical for more complicated domains
+
+\subsection{MPC problem structure}
+Highly structured. See \later{convex optimization 10.3.4 boyd}\\
+- Hessian is \textbf{block diagonal}\\
+- equality constraint matrix is \textbf{block banded}\\
+- What is the significance of block bandedness?
+ Banded is when we can stack \[
+   x_{t+1} = F(\begin{bmatrix}
+     x_t\\
+     u_t
+   \end{bmatrix})
+ \]
+ - Newton steps in banded structures are blazing fast\\
+ \textbf{difference between MPC and MDP:}
+ In MDPs we will solve the bellman equation using rewards.
+ In contorl we don't have discounted costs.
+
+ 
+*slew rate constraints: enforce locality in time, makes banded, fast
+\[ ||u(t+1)-u(t)||_{infty}\leq \Delta u_{max} \]
+
+\section{Stochastic MPC (boyd)}
+In many ways you don't need to do MPC unless it is a stochastic problem.
+
+In the Stochastic case, we still have a linear dynamical system; that is, we have
+\[x_{t+1} = Ax_t + Bu_t + w_t \]
+where:
+\begin{itemize}
+\item $x_t \in R^n$ is state, $u_t \in R^m$ is the input at time $t$
+\item $w_t$ is the process noise (or exogeneous input) at time $t$
+\end{itemize}
+\textbf{crucially, we also have a state history, $X_t=\{x_0, \ldots, x_t\}$}
+
+
+ \section {Peter Abbeel}
+ \subsection{learning trajectory (peter abiell RL seminar youtube)}
+ how to learn trajectories for a helucioter from collected pilot data.\\
+ - HMM-like generative model\\
+ - \textbf{Dynamics model used as HMM transition model} (so similar to what we have
+ been doing on the board\\
+ - Dynamic time warping -- How to align different time serries (Needleman\&Wunsch 1970),
+ Sakoe\&Chiba, 1978)\\
+ - after you have your time serries, use an extended kalmann filter
+ to smooth over your hmm model
+
+ \subsection{MPC: preceeding horizon differential dynamic programming controller}
+ \begin{enumerate}
+ \item begin with a default policy. Simulate forward
+ \item linearize around that trajectory
+ \item LQR backups from end of simulation to current to get a feedback controler
+ \item execute in simulation this feedback controller
+ \item relinearize that trajectory
+ \end{enumerate}
+
+ \subsection{Optimization-based motion planning}
+ \textbf{state space}: you can do well in motion planning with just optimization...\\
+ convex optim
+ \[\texttt{min}_x f_0(x)  \texttt{         with $f_i$ convex}\]
+ \[\texttt{s.t} f_i(x)\leq 0, i=1,2... \]
+ \[ Ax=b\]
+
+ but motion planning is \textbf{not convex}
+ \textbf{belief space}:
+ 
+
+
+\section{Learning a Dynamics Model}
+The goal is to provide a method for learning a reliable approximation of the underlying
+state transition dynamics.
+
+\subsection{previous work in the field}
+Several attempts have been made:
+\begin{enumerate}
+\item gans
+\item recurrent nets
+\item simple multi-layer perecptrons
+\item probablistic inference with variational bayes
+  \item gaussian processes
+\end{enumerate}
+
+In this work, we explore further the work of gaussian processes. The reason for selecting
+gaussian processes is that they inherently encode confidence information along with the
+predictions.
+
+\subsubsection{sense-oriented vs simulated prediction}:
+the difference is that one predicts all componants of the sytem, whereas the other only
+predicts one's sensation of the system.
+
+Most methods for dynamics learning are what we call \textit{sense-oriented}. Sense-oriented
+approaches have a fixed-dimensional input vector, whose size corresponds to the granularity
+of sensory input. For example, in the case of \later{gans}, both the input and the output
+of the system are images of fixed size.
+
+\textbf{full-simulation} approaches are both more complicated to formulate and require
+additional computation time.
+
+
+
+\subsubsection{fully-simulated dynamically-generated gaussian process
+dynamics-learning model}
+In this paper, we propose a novel fully-simulated dynamically-generated gaussian process
+dynamics-learning model that recieves as input an arbitary-dimensional input tensor
+encoding the locations and physical properties of all objects in the scene.
+
+A separate gaussian process is trained on each object in the scene from the relative view
+of that object. Finally, the output predictions of each object individually are recombined
+back into a
+
+
+
+\section{Policy Gradient Methods} (RL course by David Silver lecture 7)
+\subsection{intro}
+\begin{itemize}
+\item Methods that optimize the policy directly -- NO VALUE FUNCTION
+\item How can I make my policy better as I get new experience in?
+\item thats the point of a gradient
+\item finite differences are appoximations
+\item monte carlo policy gradients attempt to solve more analytically - follow your
+  trajectory and see where it takes you.
+\item Actor critic policy gradients use both value functions and policies
+\end{itemize}
+
+\subsection{Policy-Based Reinforcement learning}
+Policy based methods have some input-to-action mapping. We can approximate the true
+value function (or action+value function) by parameterizing functions with parameter
+$\theta$. Value function approximations:
+\[V_\theta \approx V^\pi(S) \text{--     Value function over states}\]
+\[Q_\theta(s,a) \approx Q^\pi(s,a) \text{--     Q function}\]
+
+In this method. we don't explicitly represent our policy. instead, we use the value function
+to generate a policy, either greedily or $epsilon$-greedily.
+
+Now, we \textit{directly} represent and parameterize the policy.
+\[\pi_\theta(s,a) = \mathrm{P}[a|s,\theta]\]
+Um... so this is just a probability distribution over actions given the states and parameters.
+so changing the parameters changes the pdf.
+
+The main thing we'll think about using here is gradient descent over parameter $\theta$
+
+\subsection{value-based and policy-based RL}
+\begin{itemize}
+  \item Value-based:
+    \begin{itemize}
+    \item learnt value function
+    \item implicit policy
+    \item Q and V-function approximation
+    \end{itemize}
+  \item Policy-Based
+    \begin{itemize}
+    \item No value function
+    \item Policy learned (via parametrization of distribution parameters)
+    \item \textbf{Pros}
+      \begin{itemize}
+      \item better convergence properties (value based sometimes does not converge)
+      \item much better suited for high-deimensional or continuous action spaces \later{CAN WORK IN CONTINUOUS
+          ACTION SPACES, meaning this could be the solution to our rate-space problem}
+      \item more abstract (move left if ball to left, vs ``moving left will give you 129 reward'')
+      \item learns \textit{stochastic} policies\\
+        why is this significant? Because often we want to converge on a non-deterministic policy, such as playing
+        rock paper scisors, in which the nash-equillibrium is randomness.
+        \later{ALISED GRIDWORLD - 18:44 in the RL course by David Silver video}
+
+      \end{itemize}
+    \item \textbf{Cons}
+      \begin{itemize}
+      \item convergence often to local minimum
+      \item Evaluating a policy is typically very inefficient and high-variance
+        \item also can converge slowly
+      \end{itemize}
+    \end{itemize}
+  \item Actor-Critic
+    \begin{itemize}
+    \item both value function and policy are learnt.
+    \end{itemize}
+      
+  \end{itemize}
+
+\section{Aliased grid world}:
+In POMDP settings where we have states that are aliased (we cannot tell them apart from each other), a naive deterministic
+policy will make solutions impossible in some cases because we willassign the same move to multiple states. therefore,
+we can apply a stochastic movement to these states.
+
+This is a really terrible idea in my opinion. Why? because we can use history to make better policies. Go left, and see if
+you hit a wall. if you do, you know instantly where you are. This is the entire point of the belief mdp. The belife vector
+$b$ compresses all the information you need about your history into a concise, fixed-dimensional vector.
+
+So why not do policy gradient updates this way? Typically, your belief vector is updated deterministically: You end up with
+a deterministic belief update given your observation. But why not update your belief vector with policy gradient? Learn
+\[p(a'|b, o) \]
+
+
+
+\section{Policy Objective Functions}
+How do we measure the quality of a policy $\pi_\theta$
+\begin{itemize}
+\item In \textbf{episodic} environments we can use the \textbf{start value}
+  \[ J_1(\theta) = V^{\pi_\theta}(s_1)=\textrm{E}_{\pi_\theta}[v_1]\]
+\item In continuing environments we can use the \textbf{average value}
+  \[J_{avV}(\theta) = \sum_sd^{\pi\theta}(s)V^{\pi\theta}(S) \]
+\end{itemize}
+
+\subsection{finite difference POlicy gradient}
+
+\subsection{Monte-Carlo Policy Gradient}
+
+\subsection{Actor-Critic Policy Gradient}
+
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
